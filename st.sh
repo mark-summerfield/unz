@@ -1,8 +1,3 @@
 #!/bin/bash
-clc -sS
-go mod tidy
-go fmt .
-staticcheck .
-go vet .
-golangci-lint run
+tokei -f -c80 -tVala
 git st
