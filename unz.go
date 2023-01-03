@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/mark-summerfield/clip"
 	"log"
+	"strings"
 )
 
 //go:embed Version.dat
@@ -45,9 +46,41 @@ func getConfig() (bool, bool, []string) {
 }
 
 func listContents(archive string, verbose bool) {
-	fmt.Println("listContents", archive, verbose) // TODO
+	if isTarball(archive) {
+		listTarball(archive, verbose)
+	} else {
+		listZip(archive, verbose)
+	}
+}
+
+func listTarball(archive string, verbose bool) {
+	// NOTE if verbose use bold for archive names
+	fmt.Println("listTarball", archive, verbose) // TODO
+}
+
+func listZip(archive string, verbose bool) {
+	// NOTE if verbose use bold for archive names
+	fmt.Println("listZip", archive, verbose) // TODO
 }
 
 func unpack(archive string, verbose bool) {
-	fmt.Println("unpack", archive, verbose) // TODO
+	if isTarball(archive) {
+		unpackTarball(archive, verbose)
+	} else {
+		unpackZip(archive, verbose)
+	}
+}
+
+func unpackTarball(archive string, verbose bool) {
+	fmt.Println("unpackTarball", archive, verbose) // TODO
+}
+
+func unpackZip(archive string, verbose bool) {
+	fmt.Println("unpackZip", archive, verbose) // TODO
+}
+
+func isTarball(name string) bool {
+	name = strings.ToUpper(name)
+	return strings.HasSuffix(name, ".TAR") ||
+		strings.Contains(name, ".TAR.")
 }
