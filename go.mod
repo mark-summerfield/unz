@@ -3,7 +3,7 @@ module github.com/mark-summerfield/unz
 go 1.19
 
 require (
-	github.com/mark-summerfield/clip v0.7.0
+	github.com/mark-summerfield/clip v0.8.0
 	github.com/mark-summerfield/gong v0.7.0
 	github.com/ulikunitz/xz v0.5.11
 )

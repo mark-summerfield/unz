@@ -34,7 +34,7 @@ func main() {
 }
 
 func getConfig() (bool, bool, []string) {
-	parser := clip.NewParserVersion(Version)
+	parser := clip.NewParserUser("unz", Version)
 	parser.LongDesc = `Unpacks (or lists) each archive (.tar, .tar.gz,
 	.tar.bz2, .tar.xz, .tgz, or .zip).
 
