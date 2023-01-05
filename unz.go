@@ -5,6 +5,7 @@ package main
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/bzip2"
 	"compress/gzip"
 	_ "embed"
@@ -85,7 +86,17 @@ func listTarball(archive string) {
 }
 
 func listZip(archive string) {
-	fmt.Println("listZip", archive) // TODO
+	reader, err := zip.OpenReader(archive)
+	if err != nil {
+		log.Println(gong.Underline(fmt.Sprintf(
+			"failed to open from %s: %s", archive, err)))
+		return
+	}
+	defer reader.Close()
+	fmt.Println(gong.Bold(archive))
+	for _, member := range reader.File {
+		fmt.Println(member.Name)
+	}
 }
 
 func unpack(archive string, verbose bool) {
