@@ -16,6 +16,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -27,7 +28,7 @@ func main() {
 	verbose, list, archives := getConfig()
 	for _, archive := range archives {
 		if list {
-			listContents(archive)
+			listContents(archive, verbose)
 		} else {
 			unpack(archive, verbose)
 		}
@@ -57,21 +58,26 @@ func getConfig() (bool, bool, []string) {
 	return verboseOpt.Value(), listOpt.Value(), parser.Positionals
 }
 
-func listContents(archive string) {
+func listContents(archive string, verbose bool) {
 	if isTarball(archive) {
-		listTarball(archive)
+		listTarball(archive, verbose)
 	} else {
-		listZip(archive)
+		listZip(archive, verbose)
 	}
 }
 
-func listTarball(archive string) {
+func listTarball(archive string, verbose bool) {
 	reader, closer := openTarball(archive)
 	if reader == nil {
 		return
 	}
 	defer closer()
-	fmt.Println(gong.Bold(archive))
+	if verbose {
+		fmt.Print(gong.Bold(archive))
+	} else {
+		fmt.Print(archive)
+	}
+	names := []string{}
 	for {
 		header, err := reader.Next()
 		if err == io.EOF {
@@ -80,12 +86,21 @@ func listTarball(archive string) {
 		if err != nil {
 			log.Println(gong.Underline(fmt.Sprintf(
 				"failed to read from %s: %s", archive, err)))
+		} else {
+			names = append(names, header.Name)
 		}
-		fmt.Println(header.Name)
+	}
+	if verbose {
+		n := len(names)
+		fmt.Printf(" (%s member%s)", commas(n), s(n))
+	}
+	fmt.Println("")
+	for _, name := range names {
+		fmt.Println(name)
 	}
 }
 
-func listZip(archive string) {
+func listZip(archive string, verbose bool) {
 	reader, err := zip.OpenReader(archive)
 	if err != nil {
 		log.Println(gong.Underline(fmt.Sprintf(
@@ -93,7 +108,14 @@ func listZip(archive string) {
 		return
 	}
 	defer reader.Close()
-	fmt.Println(gong.Bold(archive))
+	if !verbose {
+		fmt.Print(archive)
+	} else {
+		fmt.Print(gong.Bold(archive))
+		n := len(reader.File)
+		fmt.Printf(" (%s member%s)", commas(n), s(n))
+	}
+	fmt.Println("")
 	for _, member := range reader.File {
 		fmt.Println(member.Name)
 	}
@@ -164,4 +186,32 @@ func openTarball(archive string) (*tar.Reader, closer) {
 		closer = func() { file.Close() }
 	}
 	return reader, closer
+}
+
+func s(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
+func commas(i int) string {
+	pos := true
+	s := strconv.Itoa(i)
+	if s[0] == '-' {
+		pos = false
+		s = s[1:]
+	}
+	n := len(s) - 3
+	for n >= 0 {
+		s = s[:n] + "," + s[n:]
+		n -= 3
+	}
+	if s[0] == ',' {
+		s = s[1:]
+	}
+	if !pos {
+		s = "-" + s
+	}
+	return s
 }
