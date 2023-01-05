@@ -65,38 +65,11 @@ func listContents(archive string) {
 }
 
 func listTarball(archive string) {
-	file, err := os.Open(archive)
-	if err != nil {
-		log.Fatal(gong.Underline(fmt.Sprintf("failed to open %s: %s",
-			archive, err)))
+	reader, closer := openTarball(archive)
+	if reader == nil {
+		return
 	}
-	defer file.Close()
-	var reader *tar.Reader
-	uarchive := strings.ToUpper(archive)
-	if strings.HasSuffix(uarchive, ".GZ") || strings.HasSuffix(uarchive,
-		".TGZ") {
-		ufile, err := gzip.NewReader(file)
-		if err != nil {
-			log.Println(gong.Underline(fmt.Sprintf("failed to open %s: %s",
-				archive, err)))
-			return
-		}
-		defer ufile.Close()
-		reader = tar.NewReader(ufile)
-	} else if strings.HasSuffix(uarchive, ".BZ2") {
-		ufile := bzip2.NewReader(file)
-		reader = tar.NewReader(ufile)
-	} else if strings.HasSuffix(uarchive, ".XZ") {
-		ufile, err := xz.NewReader(file)
-		if err != nil {
-			log.Println(gong.Underline(fmt.Sprintf("failed to open %s: %s",
-				archive, err)))
-			return
-		}
-		reader = tar.NewReader(ufile)
-	} else {
-		reader = tar.NewReader(file)
-	}
+	defer closer()
 	fmt.Println(gong.Bold(archive))
 	for {
 		header, err := reader.Next()
@@ -135,4 +108,49 @@ func isTarball(name string) bool {
 	name = strings.ToUpper(name)
 	return strings.HasSuffix(name, ".TAR") ||
 		strings.HasSuffix(name, ".TGZ") || strings.Contains(name, ".TAR.")
+}
+
+type closer func()
+
+func openTarball(archive string) (*tar.Reader, closer) {
+	file, err := os.Open(archive)
+	if err != nil {
+		log.Println(gong.Underline(fmt.Sprintf("failed to open %s: %s",
+			archive, err)))
+		return nil, nil
+	}
+	var reader *tar.Reader
+	var closer closer
+	uarchive := strings.ToUpper(archive)
+	if strings.HasSuffix(uarchive, ".GZ") || strings.HasSuffix(uarchive,
+		".TGZ") {
+		ufile, err := gzip.NewReader(file)
+		if err != nil {
+			log.Println(gong.Underline(fmt.Sprintf("failed to open %s: %s",
+				archive, err)))
+			return nil, nil
+		}
+		closer = func() {
+			ufile.Close()
+			file.Close()
+		}
+		reader = tar.NewReader(ufile)
+	} else if strings.HasSuffix(uarchive, ".BZ2") {
+		ufile := bzip2.NewReader(file)
+		reader = tar.NewReader(ufile)
+	} else if strings.HasSuffix(uarchive, ".XZ") {
+		ufile, err := xz.NewReader(file)
+		if err != nil {
+			log.Println(gong.Underline(fmt.Sprintf("failed to open %s: %s",
+				archive, err)))
+			return nil, nil
+		}
+		reader = tar.NewReader(ufile)
+	} else {
+		reader = tar.NewReader(file)
+	}
+	if closer == nil {
+		closer = func() { file.Close() }
+	}
+	return reader, closer
 }
