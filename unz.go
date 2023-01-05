@@ -48,7 +48,7 @@ func getConfig() (bool, bool, []string) {
 	unpacked into the subfolder.`
 	parser.PositionalCount = clip.OneOrMorePositionals
 	_ = parser.SetPositionalVarName("ARCHIVE")
-	verboseOpt := parser.Flag("verbose", "Show actions if unpacking.")
+	verboseOpt := parser.Flag("verbose", "Show actions.")
 	listOpt := parser.Flag("list",
 		"List each archive's contents (don't unpack).")
 	err := parser.Parse()
