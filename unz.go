@@ -10,14 +10,15 @@ import (
 	"compress/gzip"
 	_ "embed"
 	"fmt"
-	"github.com/mark-summerfield/clip"
-	"github.com/mark-summerfield/gong"
-	"github.com/ulikunitz/xz"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/mark-summerfield/clip"
+	"github.com/mark-summerfield/gong"
+	"github.com/ulikunitz/xz"
 )
 
 //go:embed Version.dat
@@ -25,13 +26,9 @@ var Version string
 
 func main() {
 	log.SetFlags(0)
-	verbose, list, archives := getConfig()
+	verbose, unpack, archives := getConfig()
 	for _, archive := range archives {
-		if list {
-			listContents(archive, verbose)
-		} else {
-			unpack(archive, verbose)
-		}
+		process(archive, verbose, unpack)
 	}
 }
 
@@ -55,27 +52,29 @@ func getConfig() (bool, bool, []string) {
 	if err != nil {
 		log.Fatal(gong.Underline(fmt.Sprintf("%s\n", err)))
 	}
-	return verboseOpt.Value(), listOpt.Value(), parser.Positionals
+	return verboseOpt.Value(), !listOpt.Value(), parser.Positionals
 }
 
-func listContents(archive string, verbose bool) {
+func process(archive string, verbose, unpack bool) {
 	if isTarball(archive) {
-		listTarball(archive, verbose)
+		processTarball(archive, verbose, unpack)
 	} else {
-		listZip(archive, verbose)
+		processZip(archive, verbose, unpack)
 	}
 }
 
-func listTarball(archive string, verbose bool) {
+func processTarball(archive string, verbose, unpack bool) {
 	reader, closer := openTarball(archive)
 	if reader == nil {
 		return
 	}
 	defer closer()
-	if verbose {
-		fmt.Print(gong.Bold(archive))
-	} else {
-		fmt.Print(archive)
+	if !unpack || verbose {
+		if verbose {
+			fmt.Print(gong.Bold(archive))
+		} else {
+			fmt.Print(archive)
+		}
 	}
 	names := []string{}
 	for {
@@ -87,20 +86,27 @@ func listTarball(archive string, verbose bool) {
 			log.Println(gong.Underline(fmt.Sprintf(
 				"failed to read from %s: %s", archive, err)))
 		} else {
-			names = append(names, header.Name)
+			if unpack {
+				// TODO
+			}
+			if !unpack || verbose {
+				names = append(names, header.Name)
+			}
 		}
 	}
-	if verbose {
-		n := len(names)
-		fmt.Printf(" (%s member%s)", commas(n), s(n))
-	}
-	fmt.Println("")
-	for _, name := range names {
-		fmt.Println(name)
+	if !unpack || verbose {
+		if verbose {
+			n := len(names)
+			fmt.Printf(" (%s member%s)", commas(n), s(n))
+		}
+		fmt.Println("")
+		for _, name := range names {
+			fmt.Println(name)
+		}
 	}
 }
 
-func listZip(archive string, verbose bool) {
+func processZip(archive string, verbose, unpack bool) {
 	reader, err := zip.OpenReader(archive)
 	if err != nil {
 		log.Println(gong.Underline(fmt.Sprintf(
@@ -108,33 +114,24 @@ func listZip(archive string, verbose bool) {
 		return
 	}
 	defer reader.Close()
-	if !verbose {
-		fmt.Print(archive)
-	} else {
-		fmt.Print(gong.Bold(archive))
-		n := len(reader.File)
-		fmt.Printf(" (%s member%s)", commas(n), s(n))
+	if !unpack || verbose {
+		if !verbose {
+			fmt.Print(archive)
+		} else {
+			fmt.Print(gong.Bold(archive))
+			n := len(reader.File)
+			fmt.Printf(" (%s member%s)", commas(n), s(n))
+		}
+		fmt.Println("")
 	}
-	fmt.Println("")
 	for _, member := range reader.File {
-		fmt.Println(member.Name)
+		if unpack {
+			// TODO
+		}
+		if !unpack || verbose {
+			fmt.Println(member.Name)
+		}
 	}
-}
-
-func unpack(archive string, verbose bool) {
-	if isTarball(archive) {
-		unpackTarball(archive, verbose)
-	} else {
-		unpackZip(archive, verbose)
-	}
-}
-
-func unpackTarball(archive string, verbose bool) {
-	fmt.Println("unpackTarball", archive, verbose) // TODO
-}
-
-func unpackZip(archive string, verbose bool) {
-	fmt.Println("unpackZip", archive, verbose) // TODO
 }
 
 func isTarball(name string) bool {
