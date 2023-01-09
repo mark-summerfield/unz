@@ -6,3 +6,5 @@ README.md
 go.mod
 
 st.sh
+
+# Go tar pkg is too low level; better to stick with python
