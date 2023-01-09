@@ -28,7 +28,11 @@ func main() {
 	log.SetFlags(0)
 	verbose, unpack, archives := getConfig()
 	for _, archive := range archives {
-		process(archive, verbose, unpack)
+		if unpack {
+			unpackArchive(archive, verbose)
+		} else {
+			listArchive(archive, verbose)
+		}
 	}
 }
 
@@ -55,28 +59,35 @@ func getConfig() (bool, bool, []string) {
 	return verboseOpt.Value(), !listOpt.Value(), parser.Positionals
 }
 
-func process(archive string, verbose, unpack bool) {
+func listArchive(archive string, verbose bool) {
 	if isTarball(archive) {
-		processTarball(archive, verbose, unpack)
+		listTarball(archive, verbose)
 	} else {
-		processZip(archive, verbose, unpack)
+		listZip(archive, verbose)
 	}
 }
 
-func processTarball(archive string, verbose, unpack bool) {
+func listTarball(archive string, verbose bool) {
+	names := tarballNames(archive)
+	if verbose {
+		fmt.Print(gong.Bold(archive))
+		n := len(names)
+		fmt.Printf(" (%s member%s)\n", commas(n), s(n))
+	} else {
+		fmt.Println(archive)
+	}
+	for _, name := range names {
+		fmt.Println(name)
+	}
+}
+
+func tarballNames(archive string) []string {
+	names := []string{}
 	reader, closer := openTarball(archive)
 	if reader == nil {
-		return
+		return names
 	}
 	defer closer()
-	if !unpack || verbose {
-		if verbose {
-			fmt.Print(gong.Bold(archive))
-		} else {
-			fmt.Print(archive)
-		}
-	}
-	names := []string{}
 	for {
 		header, err := reader.Next()
 		if err == io.EOF {
@@ -86,52 +97,43 @@ func processTarball(archive string, verbose, unpack bool) {
 			log.Println(gong.Underline(fmt.Sprintf(
 				"failed to read from %s: %s", archive, err)))
 		} else {
-			if unpack {
-				// TODO
-			}
-			if !unpack || verbose {
-				names = append(names, header.Name)
-			}
+			names = append(names, header.Name)
 		}
 	}
-	if !unpack || verbose {
-		if verbose {
-			n := len(names)
-			fmt.Printf(" (%s member%s)", commas(n), s(n))
-		}
-		fmt.Println("")
-		for _, name := range names {
-			fmt.Println(name)
-		}
+	return names
+}
+
+func listZip(archive string, verbose bool) {
+	names := zipNames(archive)
+	if verbose {
+		fmt.Print(gong.Bold(archive))
+		n := len(names)
+		fmt.Printf(" (%s member%s)\n", commas(n), s(n))
+	} else {
+		fmt.Println(archive)
+	}
+	for _, name := range names {
+		fmt.Println(name)
 	}
 }
 
-func processZip(archive string, verbose, unpack bool) {
+func zipNames(archive string) []string {
+	names := []string{}
 	reader, err := zip.OpenReader(archive)
 	if err != nil {
 		log.Println(gong.Underline(fmt.Sprintf(
 			"failed to open from %s: %s", archive, err)))
-		return
+		return names
 	}
 	defer reader.Close()
-	if !unpack || verbose {
-		if !verbose {
-			fmt.Print(archive)
-		} else {
-			fmt.Print(gong.Bold(archive))
-			n := len(reader.File)
-			fmt.Printf(" (%s member%s)", commas(n), s(n))
-		}
-		fmt.Println("")
-	}
 	for _, member := range reader.File {
-		if unpack {
-			// TODO
-		}
-		if !unpack || verbose {
-			fmt.Println(member.Name)
-		}
+		names = append(names, member.Name)
 	}
+	return names
+}
+
+func unpackArchive(archive string, verbose bool) {
+	fmt.Println("TODO unpackArchive", archive, verbose)
 }
 
 func isTarball(name string) bool {
