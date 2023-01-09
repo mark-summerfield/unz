@@ -59,6 +59,31 @@ func getConfig() (bool, bool, []string) {
 	return verboseOpt.Value(), !listOpt.Value(), parser.Positionals
 }
 
+func unpackArchive(archive string, verbose bool) {
+	if isTarball(archive) {
+		unpackTarball(archive, verbose)
+	} else {
+		unpackZip(archive, verbose)
+	}
+}
+
+func unpackTarball(archive string, verbose bool) {
+	names := tarballNames(archive)
+	if len(names) == 0 {
+		if verbose {
+			fmt.Println("no members to unpack")
+		}
+		return
+	}
+	// TODO
+	fmt.Println("TODO unpackTarball", archive, verbose)
+}
+
+func unpackZip(archive string, verbose bool) {
+	// TODO
+	fmt.Println("TODO unpackZip", archive, verbose)
+}
+
 func listArchive(archive string, verbose bool) {
 	if isTarball(archive) {
 		listTarball(archive, verbose)
@@ -130,10 +155,6 @@ func zipNames(archive string) []string {
 		names = append(names, member.Name)
 	}
 	return names
-}
-
-func unpackArchive(archive string, verbose bool) {
-	fmt.Println("TODO unpackArchive", archive, verbose)
 }
 
 func isTarball(name string) bool {
