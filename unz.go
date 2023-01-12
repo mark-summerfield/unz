@@ -87,6 +87,7 @@ func unpackTarball(archive string, verbose bool) {
 		folder := gong.LongestCommonPath(names)
 		//if folder == ""
 		// TODO
+		// os.MkdirAll(folder, os.ModePerm)
 		fmt.Println("TODO unpackTarball", archive, verbose, folder)
 	}
 }

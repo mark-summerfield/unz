@@ -1,3 +1,4 @@
+# https://github.com/viniciuschiele-archive/tarx/blob/6e3da540444d/tarx.go
 # ~/bin/unz
 unz.go
 
@@ -6,5 +7,3 @@ README.md
 go.mod
 
 st.sh
-
-# Go tar pkg is too low level; better to stick with python
