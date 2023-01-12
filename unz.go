@@ -75,8 +75,9 @@ func unpackTarball(archive string, verbose bool) {
 		}
 		return
 	}
+	folder := gong.LongestCommonPath(names)
 	// TODO
-	fmt.Println("TODO unpackTarball", archive, verbose)
+	fmt.Println("TODO unpackTarball", archive, verbose, folder)
 }
 
 func unpackZip(archive string, verbose bool) {
