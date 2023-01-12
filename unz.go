@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -69,15 +70,62 @@ func unpackArchive(archive string, verbose bool) {
 
 func unpackTarball(archive string, verbose bool) {
 	names := tarballNames(archive)
-	if len(names) == 0 {
+	switch len(names) {
+	case 0:
 		if verbose {
 			fmt.Println("no members to unpack")
 		}
 		return
+	case 1:
+		reader, closer := openTarball(archive)
+		if reader == nil {
+			return
+		}
+		defer closer()
+		unpackOneTarMember(archive, reader, cwd(), verbose)
+	default:
+		folder := gong.LongestCommonPath(names)
+		//if folder == ""
+		// TODO
+		fmt.Println("TODO unpackTarball", archive, verbose, folder)
 	}
-	folder := gong.LongestCommonPath(names)
-	// TODO
-	fmt.Println("TODO unpackTarball", archive, verbose, folder)
+}
+
+func unpackOneTarMember(archive string, reader *tar.Reader, folder string,
+	verbose bool) bool {
+	header, err := reader.Next()
+	if err == io.EOF {
+		return false // no more to do
+	}
+	if err != nil {
+		log.Println(gong.Underline(fmt.Sprintf("failed to read %s: %s",
+			archive, err)))
+		return false // don't go further
+	}
+	switch header.Typeflag {
+	case tar.TypeDir:
+		log.Printf("TODO create folder %s/%s\n", folder, header.Name)
+		// TODO make dir header.Name in given folder
+		if verbose {
+			fmt.Printf("created folder %s/%s\n", folder, header.Name)
+		}
+	case tar.TypeReg:
+		log.Printf("TODO create file %s/%s\n", folder, header.Name)
+		// TODO write file header.Name in given folder
+		if verbose {
+			fmt.Printf("created file %s/%s\n", folder, header.Name)
+		}
+	case tar.TypeSymlink:
+		log.Printf("TODO create soft link %s/%s\n", folder, header.Name)
+		// TODO create soft link
+		log.Printf("skipping unsupported soft link %s\n", header.Name)
+	case tar.TypeLink:
+		log.Printf("skipping unsupported hard link %s\n", header.Name)
+	default:
+		log.Printf("skipping unsupported member type (device or FIFO) %s\n",
+			header.Name)
+	}
+	return true
 }
 
 func unpackZip(archive string, verbose bool) {
@@ -235,4 +283,16 @@ func commas(i int) string {
 		s = "-" + s
 	}
 	return s
+}
+
+func cwd() string {
+	dir, err := os.Getwd()
+	if err == nil {
+		return dir
+	}
+	dir, err = filepath.Abs(".")
+	if err == nil {
+		return dir
+	}
+	return "."
 }
