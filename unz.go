@@ -102,28 +102,34 @@ func unpackOneTarMember(archive string, reader *tar.Reader, folder string,
 			archive, err)))
 		return false // don't go further
 	}
+	name := filepath.Clean(header.Name)
+	if filepath.IsAbs(name) {
+		log.Printf("skipping risky absolute path member %s\n", name)
+		return true // try next one
+	}
+	name = filepath.Join(folder, name)
 	switch header.Typeflag {
 	case tar.TypeDir:
-		log.Printf("TODO create folder %s/%s\n", folder, header.Name)
-		// TODO make dir header.Name in given folder
+		log.Printf("TODO create folder %s\n", name)
+		// TODO make dir name in given folder
 		if verbose {
-			fmt.Printf("created folder %s/%s\n", folder, header.Name)
+			fmt.Printf("created folder %s\n", name)
 		}
 	case tar.TypeReg:
-		log.Printf("TODO create file %s/%s\n", folder, header.Name)
-		// TODO write file header.Name in given folder
+		log.Printf("TODO create file %s\n", name)
+		// TODO write file name in given folder
 		if verbose {
-			fmt.Printf("created file %s/%s\n", folder, header.Name)
+			fmt.Printf("created file %s\n", name)
 		}
 	case tar.TypeSymlink:
-		log.Printf("TODO create soft link %s/%s\n", folder, header.Name)
+		log.Printf("TODO create soft link %s\n", name)
 		// TODO create soft link
-		log.Printf("skipping unsupported soft link %s\n", header.Name)
+		log.Printf("skipping unsupported soft link %s\n", name)
 	case tar.TypeLink:
-		log.Printf("skipping unsupported hard link %s\n", header.Name)
+		log.Printf("skipping unsupported hard link %s\n", name)
 	default:
 		log.Printf("skipping unsupported member type (device or FIFO) %s\n",
-			header.Name)
+			name)
 	}
 	return true
 }
